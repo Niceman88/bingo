@@ -302,8 +302,21 @@ window.addEventListener('DOMContentLoaded', ()=>{
   const params = new URLSearchParams(location.search);
   const roomParam = params.get('room');
   if(roomParam){
-    document.getElementById('tabPlayer').click();
-    document.getElementById('joinRoomCode').value = roomParam;
+    // 참가자용 URL로 접속한 경우: 진행자 탭/방만들기 자체를 화면에서 제거하고
+    // 해당 방으로만 참가할 수 있도록 고정
+    document.getElementById('tabHost').remove();
+    document.getElementById('hostCreatePanel').remove();
+    document.querySelector('.tabs').remove();
+    document.getElementById('playerJoinPanel').classList.remove('hidden');
+    document.querySelector('#entryWrap .sub').textContent = '아래에 이름을 입력하고 입장해주세요';
+
+    const codeInput = document.getElementById('joinRoomCode');
+    codeInput.value = roomParam;
+    codeInput.readOnly = true;
+    // 방 코드 입력란 자체를 숨기고 안내문으로 대체
+    const codeLabel = [...document.querySelectorAll('#playerJoinPanel label')].find(l=>l.textContent.includes('방 코드'));
+    if(codeLabel) codeLabel.classList.add('hidden');
+    codeInput.classList.add('hidden');
   }
 });
 
