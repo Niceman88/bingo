@@ -210,7 +210,7 @@
       <h3 style="margin-top:0;">🏆 실시간 순위 / 참가자 현황</h3>
       <div class="small-muted" style="margin-bottom:6px;">접속자 <span id="playerCount">0</span>명</div>
       <table>
-        <thead><tr><th>순위</th><th>이름</th><th>체크 수</th><th>상태</th></tr></thead>
+        <thead><tr><th>순위</th><th>이름</th><th>체크 수</th><th>빙고 진행</th><th>상태</th></tr></thead>
         <tbody id="rankTableBody"></tbody>
       </table>
     </div>
@@ -326,7 +326,7 @@ window.addEventListener('DOMContentLoaded', async ()=>{
     }
     const room = roomSnap.val();
     myRoomCode = hostParam;
-    enterHostDashboard(hostParam, room.size, room.words, room.status);
+    enterHostDashboard(hostParam, room.size, room.words, room.status, room.winLines);
     return;
   }
 
@@ -371,10 +371,10 @@ document.getElementById('createRoomBtn').onclick = async ()=>{
     createdAt: firebase.database.ServerValue.TIMESTAMP
   });
   myRoomCode = roomCode;
-  enterHostDashboard(roomCode, size, words);
+  enterHostDashboard(roomCode, size, words, undefined, winLines);
 };
 
-function enterHostDashboard(roomCode, size, words, existingStatus){
+function enterHostDashboard(roomCode, size, words, existingStatus, winLines){
   document.getElementById('entryWrap').classList.add('hidden');
   document.getElementById('hostDashboard').classList.remove('hidden');
   document.getElementById('dashRoomCode').textContent = roomCode;
@@ -561,7 +561,7 @@ function enterHostDashboard(roomCode, size, words, existingStatus){
       else if(!p.ready) status = '✍️ 빙고판 작성 중';
       else if(p.ready && !anyWordCalled) status = '🙆 준비 완료';
       else status = '🎮 게임 참가중';
-      return `<tr class="${cls}"><td>${i+1}</td><td>${escapeHtml(p.name||'-')}</td><td>${p.checkedCount||0}</td><td>${status}</td></tr>`;
+      return `<tr class="${cls}"><td>${i+1}</td><td>${escapeHtml(p.name||'-')}</td><td>${p.checkedCount||0}</td><td>${p.lineProgress||0} / ${winLines||3}줄</td><td>${status}</td></tr>`;
     }).join('');
   }
 
@@ -750,9 +750,9 @@ async function autoCheckCalledWords(){
   if(!changed) return;
 
   const checkedCount = Object.keys(myCheckedState).length;
-  await db.ref(`rooms/${myRoomCode}/players/${myPlayerId}`).update({checked: myCheckedState, checkedCount});
-
   const lines = countCompletedLines(myCheckedState, mySize);
+  await db.ref(`rooms/${myRoomCode}/players/${myPlayerId}`).update({checked: myCheckedState, checkedCount, lineProgress: lines});
+
   if(lines >= myWinLines){
     const playerSnap = await db.ref(`rooms/${myRoomCode}/players/${myPlayerId}`).get();
     if(!playerSnap.val().bingoCount){
